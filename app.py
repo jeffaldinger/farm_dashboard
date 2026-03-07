@@ -248,10 +248,10 @@ if page == "📊 Overview":
             c1, c2 = st.columns(2)
             with c1:
                 st.plotly_chart(line_chart(df_r, TEMP_SENSORS, TEMP_LABELS,
-                    "Temperature Trend", "°F"), use_container_width=True)
+                    "Temperature Trend", "°F"), width='stretch')
             with c2:
                 st.plotly_chart(line_chart(df_r, HUM_SENSORS, TEMP_LABELS,
-                    "Humidity Trend", "%"), use_container_width=True)
+                    "Humidity Trend", "%"), width='stretch')
 
     # Water leak + cold storage + feed bin summary
     c1, c2, c3 = st.columns(3)
@@ -261,10 +261,10 @@ if page == "📊 Overview":
                   delta="No current leak" if last["water_leak"] == 0 else "LEAK DETECTED")
     with c2:
         st.plotly_chart(gauge_chart(last["cold_storage_temp"], "Cold Storage",
-            28, 55, "°F", 40, 44), use_container_width=True)
+            28, 55, "°F", 40, 44), width='stretch')
     with c3:
         st.plotly_chart(gauge_chart(last["feed_bin_level"], "Feed Bin Level",
-            0, 100, "%", 25, 15), use_container_width=True)
+            0, 100, "%", 25, 15), width='stretch')
 
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "🌡️ Temperature":
@@ -275,7 +275,7 @@ elif page == "🌡️ Temperature":
         with tab:
             df_r = get_range(df, days)
             st.plotly_chart(line_chart(df_r, TEMP_SENSORS, TEMP_LABELS,
-                "Temperature — All Sensors", "°F"), use_container_width=True)
+                "Temperature — All Sensors", "°F"), width='stretch')
 
     st.markdown("### Current Readings")
     cols = st.columns(4)
@@ -293,7 +293,7 @@ elif page == "🌡️ Temperature":
         "Avg (°F)": [df[s].mean() for s in TEMP_SENSORS],
         "Current (°F)": [last[s] for s in TEMP_SENSORS],
     }).round(1)
-    st.dataframe(stats, use_container_width=True, hide_index=True)
+    st.dataframe(stats, width='stretch', hide_index=True)
 
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "💧 Humidity":
@@ -304,7 +304,7 @@ elif page == "💧 Humidity":
         with tab:
             df_r = get_range(df, days)
             st.plotly_chart(line_chart(df_r, HUM_SENSORS, TEMP_LABELS,
-                "Humidity — All Sensors", "%"), use_container_width=True)
+                "Humidity — All Sensors", "%"), width='stretch')
 
     st.markdown("### Current Readings")
     cols = st.columns(4)
@@ -321,7 +321,7 @@ elif page == "💧 Humidity":
         "Avg (%)": [df[s].mean() for s in HUM_SENSORS],
         "Current (%)": [last[s] for s in HUM_SENSORS],
     }).round(1)
-    st.dataframe(stats, use_container_width=True, hide_index=True)
+    st.dataframe(stats, width='stretch', hide_index=True)
 
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "🚰 Water Leak":
@@ -349,11 +349,11 @@ elif page == "🚰 Water Leak":
         xaxis=dict(gridcolor="#2a3f55"), yaxis=dict(gridcolor="#2a3f55", title="Leak (1=Yes)"),
         height=280, margin=dict(l=0, r=0, t=40, b=0)
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     st.markdown(f"**Total leak events (7d):** {len(leak_events)}")
     if not leak_events.empty:
-        st.dataframe(leak_events, use_container_width=True, hide_index=True)
+        st.dataframe(leak_events, width='stretch', hide_index=True)
 
     st.info("ℹ️ Sensors: CBW1, CBW2, CBW6, CBW8 — Binary detection. Any water triggers a CRITICAL alert.")
 
@@ -368,7 +368,7 @@ elif page == "❄️ Cold Storage":
     c1, c2 = st.columns([1, 2])
     with c1:
         st.plotly_chart(gauge_chart(val, "Cold Storage Temp", 28, 55, "°F", 40, 44),
-                        use_container_width=True)
+                        width='stretch')
     with c2:
         tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
         for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
@@ -380,7 +380,7 @@ elif page == "❄️ Cold Storage":
                               line_color="#f39c12", annotation_text="Warn")
                 fig.add_hline(y=THRESH["cold_too_warm"], line_dash="dash",
                               line_color="#e74c3c", annotation_text="Critical")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
     st.markdown("### 7-Day Stats")
     cs = df["cold_storage_temp"]
@@ -401,7 +401,7 @@ elif page == "🌾 Feed Bin":
     c1, c2 = st.columns([1, 2])
     with c1:
         st.plotly_chart(gauge_chart(val, "Feed Bin Level", 0, 100, "%", 25, 15),
-                        use_container_width=True)
+                        width='stretch')
     with c2:
         tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
         for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
@@ -413,7 +413,7 @@ elif page == "🌾 Feed Bin":
                               line_color="#f39c12", annotation_text="Low Warning")
                 fig.add_hline(y=THRESH["bin_critical"], line_dash="dash",
                               line_color="#e74c3c", annotation_text="Critical")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "⚠️ Alerts":
@@ -444,7 +444,7 @@ elif page == "⚠️ Alerts":
         ("Feed Bin", "Refill Now", "CRITICAL", f"Below {THRESH['bin_critical']}%"),
         ("Water Leak", "Leak Detected", "CRITICAL", "Any detection"),
     ], columns=["Category", "Alert", "Severity", "Condition"])
-    st.dataframe(thresh_df, use_container_width=True, hide_index=True)
+    st.dataframe(thresh_df, width='stretch', hide_index=True)
 
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "⚙️ Sensor Status":
@@ -463,7 +463,7 @@ elif page == "⚙️ Sensor Status":
         ("FeedBin1", "Feed Bin Level", "Online", "8 min ago", "60%"),
     ]
     sensor_df = pd.DataFrame(sensors, columns=["Sensor ID", "Type", "Status", "Last Seen", "Battery"])
-    st.dataframe(sensor_df, use_container_width=True, hide_index=True)
+    st.dataframe(sensor_df, width='stretch', hide_index=True)
 
     st.markdown("### Data Pipeline Status")
     c1, c2, c3 = st.columns(3)
