@@ -205,15 +205,20 @@ def sensor_card(label, temp, humidity, battery):
 
     return f"""
     <div class="{card_class}">
-        <div class="sensor-name">{label}</div>
-        <div class="reading-label">Temperature</div>
-        <div class="reading-value {temp_cls}">{temp:.1f}°F</div>
-        <div class="reading-label">Humidity</div>
-        <div class="reading-value {hum_cls}">{humidity:.1f}%</div>
-        <div class="reading-label">Battery</div>
-        <div style="color:#8fa8c8; font-size:13px; margin-bottom:4px;">{bat_pct}%</div>
-        <div class="battery-bar-bg">
-            <div class="battery-bar-fill" style="width:{bat_pct}%; background:{bat_color};"></div>
+        <div class="sensor-name">{label} - Temp & Humidity</div>
+        <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
+            <div style="text-align:center;">
+                <div class="reading-value {temp_cls}">{temp:.1f}°F</div>
+                <div class="reading-label">Temperature</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="reading-value {hum_cls}">{humidity:.1f}%</div>
+                <div class="reading-label">Humidity</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="reading-value">{bat_pct}%</div>
+                <div class="reading-label">Battery</div>
+            </div>
         </div>
     </div>
     """
@@ -316,10 +321,10 @@ if page == "📊 Overview":
             c1, c2 = st.columns(2)
             with c1:
                 st.plotly_chart(line_chart(df_r, TEMP_SENSORS, TEMP_LABELS, "Temperature Trend", "°F"),
-                                use_container_width=True)
+                                width='stretch')
             with c2:
                 st.plotly_chart(line_chart(df_r, HUM_SENSORS, TEMP_LABELS, "Humidity Trend", "%"),
-                                use_container_width=True)
+                                width='stretch')
 
 # ── Water Leak ─────────────────────────────────────────────────────────────────
 elif page == "🚰 Water Leak":
@@ -343,10 +348,10 @@ elif page == "🚰 Water Leak":
         yaxis=dict(gridcolor="#2a3f55", title="Leak (1=Yes)"),
         height=280, margin=dict(l=0, r=0, t=40, b=0)
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.markdown(f"**Total leak events (7d):** {len(leak_events)}")
     if not leak_events.empty:
-        st.dataframe(leak_events, use_container_width=True, hide_index=True)
+        st.dataframe(leak_events, width='stretch', hide_index=True)
     st.info("ℹ️ Sensors: CBW1, CBW2, CBW6, CBW8 — Binary detection. Any water triggers a CRITICAL alert.")
 
 # ── Cold Storage ───────────────────────────────────────────────────────────────
@@ -360,7 +365,7 @@ elif page == "❄️ Cold Storage":
     c1, c2 = st.columns([1, 2])
     with c1:
         st.plotly_chart(gauge_chart(val, "Cold Storage Temp", 28, 55, "°F", 40, 44),
-                        use_container_width=True)
+                        width='stretch')
     with c2:
         tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
         for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
@@ -372,7 +377,7 @@ elif page == "❄️ Cold Storage":
                               line_color="#f39c12", annotation_text="Warn")
                 fig.add_hline(y=THRESH["cold_too_warm"], line_dash="dash",
                               line_color="#e74c3c", annotation_text="Critical")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
     st.markdown("### 7-Day Stats")
     cs = df["cold_storage_temp"]
@@ -393,7 +398,7 @@ elif page == "🌾 Feed Bin":
     c1, c2 = st.columns([1, 2])
     with c1:
         st.plotly_chart(gauge_chart(val, "Feed Bin Level", 0, 100, "%", 25, 15),
-                        use_container_width=True)
+                        width='stretch')
     with c2:
         tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
         for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
@@ -405,7 +410,7 @@ elif page == "🌾 Feed Bin":
                               line_color="#f39c12", annotation_text="Low Warning")
                 fig.add_hline(y=THRESH["bin_critical"], line_dash="dash",
                               line_color="#e74c3c", annotation_text="Critical")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 # ── Alerts ─────────────────────────────────────────────────────────────────────
 elif page == "⚠️ Alerts":
@@ -436,7 +441,7 @@ elif page == "⚠️ Alerts":
         ("Feed Bin",    "Refill Now",    "CRITICAL", f"Below {THRESH['bin_critical']}%"),
         ("Water Leak",  "Leak Detected", "CRITICAL", "Any detection"),
     ], columns=["Category", "Alert", "Severity", "Condition"]),
-    use_container_width=True, hide_index=True)
+    width='stretch', hide_index=True)
 
 # ── Sensor Status ──────────────────────────────────────────────────────────────
 elif page == "⚙️ Sensor Status":
@@ -454,7 +459,7 @@ elif page == "⚙️ Sensor Status":
         ("Cold1",    "Cold Storage",         "Online",  "1 min ago",  "94%"),
         ("FeedBin1", "Feed Bin Level",       "Online",  "8 min ago",  "60%"),
     ], columns=["Sensor ID", "Type", "Status", "Last Seen", "Battery"]),
-    use_container_width=True, hide_index=True)
+    width='stretch', hide_index=True)
 
     st.markdown("### Data Pipeline Status")
     c1, c2, c3 = st.columns(3)
