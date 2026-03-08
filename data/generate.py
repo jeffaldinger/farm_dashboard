@@ -59,10 +59,12 @@ def generate(days=7):
         "CBT2_battery":      100,
         "CBT3A_battery":     100,
         "CBT3B_battery":     100,
-        # Cold storage temp (°F)
-        "cold_storage_temp": smooth(36, 1.5, n, 8),
-        # Feed bin fill level (%)
-        "feed_bin_level":    np.clip(smooth(72, 2, n, 9), 10, 100),
+        # Cold storage temp (°F) and humidity (%)
+        "cold_storage_temp":     smooth(36, 1.5, n, 8),
+        "cold_storage_humidity": smooth(55, 3, n, 10),
+        # Feed bin fill level (%) and distance from sensor (inches)
+        "feed_bin_level":        np.clip(smooth(72, 2, n, 9), 10, 100),
+        "feed_bin_distance":     np.clip(smooth(18, 2, n, 11), 0, 60),
         # Water leak (binary 0/1)
         "water_leak":        leak,
     })

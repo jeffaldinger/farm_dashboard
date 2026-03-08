@@ -19,7 +19,25 @@ st.markdown("""
 <style>
     [data-testid="stSidebar"] { background-color: #1a2332; }
     [data-testid="stSidebar"] * { color: #e0e6ef !important; }
-    [data-testid="stSidebar"] .stRadio label { font-size: 15px; padding: 4px 0; }
+    [data-testid="stSidebar"] a { text-decoration: none !important; }
+    [data-testid="stSidebar"] a:hover { background:#243447 !important; color:#ffffff !important; }
+    [data-testid="stSidebar"] .stButton button {
+        background-color: transparent !important;
+        border: none !important;
+        text-align: left !important;
+        box-shadow: none !important;
+        color: #c0cfe0 !important;
+    }
+    [data-testid="stSidebar"] .stButton button:hover {
+        background-color: #243447 !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+    [data-testid="stSidebar"] .stButton button:focus {
+        box-shadow: none !important;
+        border: none !important;
+        outline: none !important;
+    }
     .stApp { background-color: #111c2b; }
     h1, h2, h3, h4 { color: #e0e6ef; }
     p, li { color: #c0cfe0; }
@@ -127,25 +145,42 @@ def check_alerts(row):
 alerts = check_alerts(last)
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
+NAV_PAGES = [
+    "📊 Overview",
+    "🌡️ Temperature",
+    "💧 Humidity",
+    "🚰 Water Leak",
+    "❄️ Cold Storage",
+    "🌾 Feed Bin",
+    "⚠️ Alerts",
+    "⚙️ Sensor Status",
+    "🎚️ Thresholds",
+    "🤖 AI Chat",
+]
+
+if "page" not in st.session_state:
+    st.session_state.page = "📊 Overview"
+
 with st.sidebar:
     st.markdown("## 🌾 FarmSense")
     st.markdown("**Sensor Monitoring Dashboard**")
     st.markdown("---")
-    page = st.radio("Navigation", [
-        "📊 Overview",
-        "🚰 Water Leak",
-        "❄️ Cold Storage",
-        "🌾 Feed Bin",
-        "⚠️ Alerts",
-        "⚙️ Sensor Status",
-        "🎚️ Thresholds",
-        "🤖 AI Chat",
-    ])
+
+    for nav_item in NAV_PAGES:
+        label = f"• {nav_item}" if st.session_state.page == nav_item else nav_item
+        if st.button(label, key=f"nav_{nav_item}", width='stretch'):
+            st.session_state.page = nav_item
+            st.rerun()
+
     st.markdown("---")
-    alert_color = "🔴" if any(a[0] == "CRITICAL" for a in alerts) else ("🟡" if alerts else "🟢")
-    st.markdown(f"{alert_color} **{len(alerts)} Active Alert{'s' if len(alerts) != 1 else ''}**")
-    st.markdown("---")
-    st.caption("Data Source: LoRaWAN Sensors\nRefresh: Every 15 min")
+    with st.expander("📥 Export Data"):
+        start = st.date_input("Start Date", value=(datetime.now() - timedelta(days=7)).date())
+        end   = st.date_input("End Date",   value=datetime.now().date())
+        df_export = df[(df["timestamp"].dt.date >= start) & (df["timestamp"].dt.date <= end)]
+        csv = df_export.to_csv(index=False).encode()
+        st.download_button("⬇️ Download CSV", csv, "farmsense_export.csv", "text/csv")
+
+page = st.session_state.page
 
 # ── Chart helpers ──────────────────────────────────────────────────────────────
 COLORS = ["#2ecc71", "#3498db", "#e67e22", "#9b59b6"]
@@ -212,7 +247,7 @@ def sensor_card(label, temp, humidity, battery):
                 <div class="reading-label">Temperature</div>
             </div>
             <div style="text-align:center;">
-                <div class="reading-value {hum_cls}">{humidity:.1f}%</div>
+                <div class="reading-value {hum_cls}">{round(humidity)}%</div>
                 <div class="reading-label">Humidity</div>
             </div>
             <div style="text-align:center;">
@@ -236,12 +271,14 @@ if page == "📊 Overview":
     else:
         st.success("✅ All sensors nominal")
 
-    cols = st.columns(4)
+    cols = st.columns(6)
     for col, (label, value, icon) in zip(cols, [
-        ("Avg Temperature", f"{np.mean([last[s] for s in TEMP_SENSORS]):.1f}°F", "🌡️"),
-        ("Avg Humidity",    f"{np.mean([last[s] for s in HUM_SENSORS]):.1f}%",   "💧"),
-        ("Cold Storage",    f"{last['cold_storage_temp']:.1f}°F",                "❄️"),
-        ("Feed Bin Level",  f"{last['feed_bin_level']:.1f}%",                    "🌾"),
+        ("Avg Temperature",      f"{np.mean([last[s] for s in TEMP_SENSORS]):.1f}°F", "🌡️"),
+        ("Avg Humidity",         f"{round(np.mean([last[s] for s in HUM_SENSORS]))}%", "☁️"),
+        ("Water Leak (4 sensors)", "OK",                                               "💧"),
+        ("Cold Storage",         f"{last['cold_storage_temp']:.1f}°F",                "❄️"),
+        ("Feed Bin Level",       f"{round(last['feed_bin_level'])}%",                 "🌾"),
+        ("Sensors Online",       "6/10",                                               "📡"),
     ]):
         col.metric(f"{icon} {label}", value)
 
@@ -256,28 +293,34 @@ if page == "📊 Overview":
     # ── Water Leak Detection section ───────────────────────────────────────────
     st.markdown("---")
     st.markdown("### 🚰 Water Leak Detection")
-    leak_status = last["water_leak"] > 0
-    leak_count_7d = int(df["water_leak"].sum())
-    leak_border = "#e74c3c" if leak_status else "#2ecc71"
-    leak_status_color = "#e74c3c" if leak_status else "#2ecc71"
-    leak_status_text = "⚠️ LEAK DETECTED" if leak_status else "✅ Clear"
-    st.markdown(f"""
-    <div class="sensor-card" style="border-top-color:{leak_border}; text-align:center; max-width:320px;">
-        <div class="sensor-name">Water Leak Sensors</div>
-        <div class="reading-label">Current Status</div>
-        <div class="reading-value" style="color:{leak_status_color};">{leak_status_text}</div>
-        <div class="reading-label">Events (Last 7 Days)</div>
-        <div class="reading-value">{leak_count_7d}</div>
-        <div class="reading-label">Sensors</div>
-        <div style="color:#8fa8c8; font-size:13px;">CBW1, CBW2, CBW6, CBW8</div>
-    </div>
-    """, unsafe_allow_html=True)
+    cbw_sensors = ["CBW1", "CBW2", "CBW6", "CBW8"]
+    cbw_cols = st.columns(4)
+    for col, name in zip(cbw_cols, cbw_sensors):
+        with col:
+            st.markdown(f"""
+            <div class="sensor-card" style="border-top-color:#6a88a8;">
+                <div class="sensor-name">{name} - Water Leak</div>
+                <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
+                    <div style="text-align:center;">
+                        <div class="reading-value" style="color:#8fa8c8;">--</div>
+                        <div class="reading-label">Water Leak</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div class="reading-value" style="color:#8fa8c8;">--%</div>
+                        <div class="reading-label">Battery</div>
+                    </div>
+                </div>
+                <div class="reading-label" style="text-align:center; margin-top:10px;">No recent data</div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # ── Cold Storage & Feed Bin section ────────────────────────────────────────
     st.markdown("---")
     st.markdown("### ❄️ Cold Storage & Feed Bin")
     cs_val = last["cold_storage_temp"]
+    cs_hum = last["cold_storage_humidity"]
     fb_val = last["feed_bin_level"]
+    fb_dist = last["feed_bin_distance"]
 
     cs_cls = "critical" if (cs_val < THRESH["cold_too_cold"] or cs_val > THRESH["cold_too_warm"]) \
              else ("warning" if cs_val > THRESH["cold_warm_warn"] else "")
@@ -286,29 +329,62 @@ if page == "📊 Overview":
 
     cs_val_color = "#e74c3c" if cs_cls == "critical" else ("#f39c12" if cs_cls == "warning" else "#ffffff")
     fb_val_color = "#e74c3c" if fb_cls == "critical" else ("#f39c12" if fb_cls == "warning" else "#ffffff")
-
     cs_border = "#e74c3c" if cs_cls == "critical" else ("#f39c12" if cs_cls == "warning" else "#2ecc71")
     fb_border = "#e74c3c" if fb_cls == "critical" else ("#f39c12" if fb_cls == "warning" else "#2ecc71")
 
-    box_c1, box_c2, _ = st.columns([1, 1, 2])
+    # Last updated time from the CSV timestamp
+    last_ts = last["timestamp"]
+    now = datetime.now()
+    delta = now - last_ts
+    total_mins = int(delta.total_seconds() // 60)
+    if total_mins < 60:
+        last_updated = f"Last updated {total_mins}m ago"
+    else:
+        hrs = total_mins // 60
+        mins = total_mins % 60
+        last_updated = f"Last updated {hrs}h {mins}m ago" if mins else f"Last updated {hrs}h ago"
+
+    box_c1, box_c2 = st.columns(2)
     with box_c1:
         st.markdown(f"""
         <div class="sensor-card" style="border-top-color:{cs_border};">
             <div class="sensor-name">Cold Storage</div>
-            <div class="reading-label">Temperature</div>
-            <div class="reading-value" style="color:{cs_val_color};">{cs_val:.1f}°F</div>
-            <div class="reading-label">Safe Range</div>
-            <div style="color:#8fa8c8; font-size:13px;">{THRESH['cold_too_cold']}°F — {THRESH['cold_too_warm']}°F</div>
+            <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
+                <div style="text-align:center;">
+                    <div class="reading-value" style="color:{cs_val_color};">{cs_val:.1f}°F</div>
+                    <div class="reading-label">Temp</div>
+                </div>
+                <div style="text-align:center;">
+                    <div class="reading-value">{round(cs_hum)}%</div>
+                    <div class="reading-label">Humidity</div>
+                </div>
+                <div style="text-align:center;">
+                    <div class="reading-value">100%</div>
+                    <div class="reading-label">Battery</div>
+                </div>
+            </div>
+            <div style="color:#6a88a8; font-size:11px; text-align:left; margin-top:12px;">{last_updated}</div>
         </div>
         """, unsafe_allow_html=True)
     with box_c2:
         st.markdown(f"""
         <div class="sensor-card" style="border-top-color:{fb_border};">
             <div class="sensor-name">Feed Bin</div>
-            <div class="reading-label">Fill Level</div>
-            <div class="reading-value" style="color:{fb_val_color};">{fb_val:.1f}%</div>
-            <div class="reading-label">Refill Below</div>
-            <div style="color:#8fa8c8; font-size:13px;">{THRESH['bin_low']}% (warn) / {THRESH['bin_critical']}% (critical)</div>
+            <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
+                <div style="text-align:center;">
+                    <div class="reading-value" style="color:{fb_val_color};">{round(fb_val)}%</div>
+                    <div class="reading-label">Level</div>
+                </div>
+                <div style="text-align:center;">
+                    <div class="reading-value">{fb_dist:.1f}cm</div>
+                    <div class="reading-label">Distance</div>
+                </div>
+                <div style="text-align:center;">
+                    <div class="reading-value">100%</div>
+                    <div class="reading-label">Battery</div>
+                </div>
+            </div>
+            <div style="color:#6a88a8; font-size:11px; text-align:left; margin-top:12px;">{last_updated}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -325,6 +401,60 @@ if page == "📊 Overview":
             with c2:
                 st.plotly_chart(line_chart(df_r, HUM_SENSORS, TEMP_LABELS, "Humidity Trend", "%"),
                                 width='stretch')
+
+# ── Temperature ────────────────────────────────────────────────────────────────
+elif page == "🌡️ Temperature":
+    st.title("🌡️ Temperature Analysis")
+
+    st.markdown("### Current Readings")
+    cols = st.columns(4)
+    for col, s, l in zip(cols, TEMP_SENSORS, TEMP_LABELS):
+        val = last[s]
+        status = "🔴" if val < THRESH["temp_frost"] or val > THRESH["temp_heat"] else "🟢"
+        col.metric(f"{status} {l}", f"{val:.1f}°F")
+
+    tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
+    for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
+        with tab:
+            df_r = get_range(df, days)
+            st.plotly_chart(line_chart(df_r, TEMP_SENSORS, TEMP_LABELS,
+                "Temperature — All Sensors", "°F"), width='stretch')
+
+    st.markdown("### 7-Day Statistics")
+    st.dataframe(pd.DataFrame({
+        "Sensor":      TEMP_LABELS,
+        "Min (°F)":    [round(df[s].min(), 1) for s in TEMP_SENSORS],
+        "Max (°F)":    [round(df[s].max(), 1) for s in TEMP_SENSORS],
+        "Avg (°F)":    [round(df[s].mean(), 1) for s in TEMP_SENSORS],
+        "Current (°F)":[round(last[s], 1) for s in TEMP_SENSORS],
+    }), width='stretch', hide_index=True)
+
+# ── Humidity ───────────────────────────────────────────────────────────────────
+elif page == "💧 Humidity":
+    st.title("💧 Humidity Analysis")
+
+    st.markdown("### Current Readings")
+    cols = st.columns(4)
+    for col, s, l in zip(cols, HUM_SENSORS, TEMP_LABELS):
+        val = last[s]
+        status = "🟡" if val < THRESH["hum_dry"] or val > THRESH["hum_mold"] else "🟢"
+        col.metric(f"{status} {l}", f"{round(val)}%")
+
+    tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
+    for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
+        with tab:
+            df_r = get_range(df, days)
+            st.plotly_chart(line_chart(df_r, HUM_SENSORS, TEMP_LABELS,
+                "Humidity — All Sensors", "%"), width='stretch')
+
+    st.markdown("### 7-Day Statistics")
+    st.dataframe(pd.DataFrame({
+        "Sensor":    TEMP_LABELS,
+        "Min (%)":   [round(df[s].min()) for s in HUM_SENSORS],
+        "Max (%)":   [round(df[s].max()) for s in HUM_SENSORS],
+        "Avg (%)":   [round(df[s].mean()) for s in HUM_SENSORS],
+        "Current (%)":[round(last[s]) for s in HUM_SENSORS],
+    }), width='stretch', hide_index=True)
 
 # ── Water Leak ─────────────────────────────────────────────────────────────────
 elif page == "🚰 Water Leak":
@@ -574,13 +704,3 @@ Answer questions helpfully and concisely. If asked something outside farm sensor
                     reply = f"Sorry, I couldn't connect to the AI service. ({e})"
                 st.write(reply)
                 st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-# ── CSV Export ─────────────────────────────────────────────────────────────────
-st.markdown("---")
-with st.expander("📥 Export Data"):
-    c1, c2 = st.columns(2)
-    start = c1.date_input("Start Date", value=(datetime.now() - timedelta(days=7)).date())
-    end   = c2.date_input("End Date",   value=datetime.now().date())
-    df_export = df[(df["timestamp"].dt.date >= start) & (df["timestamp"].dt.date <= end)]
-    csv = df_export.to_csv(index=False).encode()
-    st.download_button("⬇️ Download CSV", csv, "farmsense_export.csv", "text/csv")
