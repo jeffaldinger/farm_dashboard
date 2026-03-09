@@ -460,87 +460,116 @@ elif page == "💧 Humidity":
 elif page == "🚰 Water Leak":
     st.title("🚰 Water Leak Detection")
 
-    if last["water_leak"]:
-        st.error("🚨 WATER LEAK CURRENTLY DETECTED")
-    else:
-        st.success("✅ No active water leak detected")
-
-    df_r = get_range(df, 7)
-    leak_events = df_r[df_r["water_leak"] > 0][["timestamp", "water_leak"]].copy()
-    leak_events.columns = ["Timestamp", "Leak Detected"]
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(x=df_r["timestamp"], y=df_r["water_leak"],
-                         marker_color="#e74c3c", name="Leak Event"))
-    fig.update_layout(
-        title="Water Leak Events (7 Days)", paper_bgcolor="#1e2d3d", plot_bgcolor="#1e2d3d",
-        font_color="#c0cfe0", xaxis=dict(gridcolor="#2a3f55"),
-        yaxis=dict(gridcolor="#2a3f55", title="Leak (1=Yes)"),
-        height=280, margin=dict(l=0, r=0, t=40, b=0)
-    )
-    st.plotly_chart(fig, width='stretch')
-    st.markdown(f"**Total leak events (7d):** {len(leak_events)}")
-    if not leak_events.empty:
-        st.dataframe(leak_events, width='stretch', hide_index=True)
-    st.info("ℹ️ Sensors: CBW1, CBW2, CBW6, CBW8 — Binary detection. Any water triggers a CRITICAL alert.")
+    cbw_sensors = ["CBW1", "CBW2", "CBW6", "CBW8"]
+    cols = st.columns(4)
+    for col, name in zip(cols, cbw_sensors):
+        with col:
+            st.markdown(f"""
+            <div class="sensor-card" style="border-top-color:#4a5568;">
+                <div class="sensor-name" style="color:#6a88a8;">{name} - Water Leak</div>
+                <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
+                    <div style="text-align:center;">
+                        <div class="reading-value" style="color:#4a5568;">--</div>
+                        <div class="reading-label">Water Leak</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div class="reading-value" style="color:#4a5568;">--%</div>
+                        <div class="reading-label">Battery</div>
+                    </div>
+                </div>
+                <div class="reading-label" style="text-align:center; margin-top:10px;">Offline — No recent data</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ── Cold Storage ───────────────────────────────────────────────────────────────
 elif page == "❄️ Cold Storage":
     st.title("❄️ Cold Storage Monitoring")
 
-    val = last["cold_storage_temp"]
-    status = "🔴 CRITICAL" if val > 44 or val < 32 else ("🟡 WARNING" if val > 40 else "🟢 NORMAL")
-    st.metric("Current Temperature", f"{val:.1f}°F", delta=status)
+    cs_val = last["cold_storage_temp"]
+    cs_hum = last["cold_storage_humidity"]
 
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        st.plotly_chart(gauge_chart(val, "Cold Storage Temp", 28, 55, "°F", 40, 44),
-                        width='stretch')
-    with c2:
-        tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
-        for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
-            with tab:
-                df_r = get_range(df, days)
-                fig = line_chart(df_r, ["cold_storage_temp"], ["Cold Storage"],
-                                 "Cold Storage Temperature History", "°F")
-                fig.add_hline(y=THRESH["cold_warm_warn"], line_dash="dash",
-                              line_color="#f39c12", annotation_text="Warn")
-                fig.add_hline(y=THRESH["cold_too_warm"], line_dash="dash",
-                              line_color="#e74c3c", annotation_text="Critical")
-                st.plotly_chart(fig, width='stretch')
+    cs_cls = "critical" if (cs_val < THRESH["cold_too_cold"] or cs_val > THRESH["cold_too_warm"]) \
+             else ("warning" if cs_val > THRESH["cold_warm_warn"] else "")
+    cs_val_color = "#e74c3c" if cs_cls == "critical" else ("#f39c12" if cs_cls == "warning" else "#ffffff")
+    cs_border = "#e74c3c" if cs_cls == "critical" else ("#f39c12" if cs_cls == "warning" else "#2ecc71")
 
-    st.markdown("### 7-Day Stats")
-    cs = df["cold_storage_temp"]
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Min", f"{cs.min():.1f}°F")
-    c2.metric("Max", f"{cs.max():.1f}°F")
-    c3.metric("Avg", f"{cs.mean():.1f}°F")
-    c4.metric("Std Dev", f"{cs.std():.2f}°F")
+    st.markdown(f"""
+    <div class="sensor-card" style="border-top-color:{cs_border};">
+        <div class="sensor-name">Cold Storage</div>
+        <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
+            <div style="text-align:center;">
+                <div class="reading-value" style="color:{cs_val_color};">{cs_val:.1f}°F</div>
+                <div class="reading-label">Temp</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="reading-value">{round(cs_hum)}%</div>
+                <div class="reading-label">Humidity</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="reading-value">100%</div>
+                <div class="reading-label">Battery</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("###")
+    tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
+    for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
+        with tab:
+            df_r = get_range(df, days)
+            fig = line_chart(df_r, ["cold_storage_temp"], ["Cold Storage"],
+                             "Cold Storage Temperature History", "°F")
+            fig.add_hline(y=THRESH["cold_warm_warn"], line_dash="dash",
+                          line_color="#f39c12", annotation_text="Warn")
+            fig.add_hline(y=THRESH["cold_too_warm"], line_dash="dash",
+                          line_color="#e74c3c", annotation_text="Critical")
+            st.plotly_chart(fig, width='stretch')
 
 # ── Feed Bin ───────────────────────────────────────────────────────────────────
 elif page == "🌾 Feed Bin":
     st.title("🌾 Feed Bin Level")
 
-    val = last["feed_bin_level"]
-    status = "🔴 CRITICAL — Refill Now!" if val < 15 else ("🟡 Low" if val < 25 else "🟢 OK")
-    st.metric("Current Fill Level", f"{val:.1f}%", delta=status)
+    fb_val  = last["feed_bin_level"]
+    fb_dist = last["feed_bin_distance"]
 
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        st.plotly_chart(gauge_chart(val, "Feed Bin Level", 0, 100, "%", 25, 15),
-                        width='stretch')
-    with c2:
-        tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
-        for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
-            with tab:
-                df_r = get_range(df, days)
-                fig = line_chart(df_r, ["feed_bin_level"], ["Feed Bin"],
-                                 "Feed Bin Level History", "%")
-                fig.add_hline(y=THRESH["bin_low"], line_dash="dash",
-                              line_color="#f39c12", annotation_text="Low Warning")
-                fig.add_hline(y=THRESH["bin_critical"], line_dash="dash",
-                              line_color="#e74c3c", annotation_text="Critical")
-                st.plotly_chart(fig, width='stretch')
+    fb_cls = "critical" if fb_val < THRESH["bin_critical"] \
+             else ("warning" if fb_val < THRESH["bin_low"] else "")
+    fb_val_color = "#e74c3c" if fb_cls == "critical" else ("#f39c12" if fb_cls == "warning" else "#ffffff")
+    fb_border    = "#e74c3c" if fb_cls == "critical" else ("#f39c12" if fb_cls == "warning" else "#2ecc71")
+
+    st.markdown(f"""
+    <div class="sensor-card" style="border-top-color:{fb_border};">
+        <div class="sensor-name">Feed Bin</div>
+        <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
+            <div style="text-align:center;">
+                <div class="reading-value" style="color:{fb_val_color};">{round(fb_val)}%</div>
+                <div class="reading-label">Current Level</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="reading-value">{fb_dist:.1f}cm</div>
+                <div class="reading-label">Distance to Fill</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="reading-value">100%</div>
+                <div class="reading-label">Battery</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("###")
+    tab1, tab2, tab3 = st.tabs(["24 Hours", "3 Days", "7 Days"])
+    for tab, days in zip([tab1, tab2, tab3], [1, 3, 7]):
+        with tab:
+            df_r = get_range(df, days)
+            fig = line_chart(df_r, ["feed_bin_level"], ["Feed Bin"],
+                             "Feed Bin Level History", "%")
+            fig.add_hline(y=THRESH["bin_low"], line_dash="dash",
+                          line_color="#f39c12", annotation_text="Low Warning")
+            fig.add_hline(y=THRESH["bin_critical"], line_dash="dash",
+                          line_color="#e74c3c", annotation_text="Critical")
+            st.plotly_chart(fig, width='stretch')
 
 # ── Alerts ─────────────────────────────────────────────────────────────────────
 elif page == "⚠️ Alerts":
