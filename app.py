@@ -24,6 +24,11 @@ LATEST_CSV  = os.path.join(DATA_DIR, "latest.csv")
 
 @st.cache_data(ttl=300)
 def load_data():
+    # Validate paths stay within the expected data directory
+    for path in [SENSORS_CSV, LATEST_CSV]:
+        if not os.path.realpath(path).startswith(os.path.realpath(DATA_DIR)):
+            st.error("⚠️ Invalid data file path.")
+            st.stop()
     if not os.path.exists(SENSORS_CSV):
         st.error("⚠️ Data files not found. Please run: `python data/generate.py`")
         st.stop()
@@ -63,7 +68,7 @@ with st.sidebar:
     st.markdown("---")
     for nav_item in NAV_PAGES:
         label = f"• {nav_item}" if st.session_state.page == nav_item else nav_item
-        if st.button(label, key=f"nav_{nav_item}", width='stretch'):
+        if st.button(label, key=f"nav_{nav_item}", use_container_width=True):
             st.session_state.page = nav_item
             st.rerun()
     st.markdown("---")
