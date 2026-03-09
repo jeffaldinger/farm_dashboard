@@ -1,0 +1,68 @@
+[data-testid="stSidebar"] { background-color: #1a2332; }
+[data-testid="stSidebar"] * { color: #e0e6ef !important; }
+[data-testid="stSidebar"] a { text-decoration: none !important; }
+[data-testid="stSidebar"] a:hover { background:#243447 !important; color:#ffffff !important; }
+[data-testid="stSidebar"] .stButton button {
+    background-color: transparent !important;
+    border: none !important;
+    text-align: left !important;
+    box-shadow: none !important;
+    color: #c0cfe0 !important;
+}
+[data-testid="stSidebar"] .stButton button:hover {
+    background-color: #243447 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+[data-testid="stSidebar"] .stButton button:focus {
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+}
+.stApp { background-color: #111c2b; }
+h1, h2, h3, h4 { color: #e0e6ef; }
+p, li { color: #c0cfe0; }
+div[data-testid="stChatMessage"] { background: #1e2d3d; border-radius: 10px; margin: 4px 0; }
+
+.sensor-card {
+    background: #1e2d3d;
+    border-radius: 10px;
+    padding: 16px 20px;
+    border-top: 4px solid #2ecc71;
+    text-align: center;
+}
+.sensor-card.warning { border-top-color: #f39c12; }
+.sensor-card.critical { border-top-color: #e74c3c; }
+.sensor-name {
+    color: #8fa8c8;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+}
+.reading-label {
+    color: #6a88a8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+.reading-value {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+.reading-value.warn { color: #f39c12; }
+.reading-value.crit { color: #e74c3c; }
+.battery-bar-bg {
+    background: #2a3f55;
+    border-radius: 4px;
+    height: 6px;
+    margin-top: 4px;
+}
+.battery-bar-fill {
+    border-radius: 4px;
+    height: 6px;
+}
