@@ -9,12 +9,27 @@ A Streamlit-based farm sensor monitoring dashboard demo with fake data.
    pip install -r requirements.txt
    ```
 
-2. **Run the app:**
+2. **Generate fake sensor data:**
+   ```bash
+   python data/generate.py
+   ```
+
+3. **Run the app:**
    ```bash
    streamlit run app.py
    ```
 
-3. Open your browser to `http://localhost:8501`
+4. Open your browser to `http://localhost:8501`
+
+## Testing
+
+Run the test suite from the `farm_dashboard/` directory:
+
+```bash
+pytest tests/ -v
+```
+
+Tests cover alert logic, utility functions, and data integrity. Make sure you have run `python data/generate.py` at least once before running the tests.
 
 ## Features
 
