@@ -1,10 +1,16 @@
 import streamlit as st
 import requests
+import os
 
 
 def render(df, last, alerts, THRESH):
     st.title("🤖 AI Chat")
     st.caption("Ask questions about your sensor data — temperature, humidity, water leaks, cold storage, feed bin, and more.")
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        st.warning("⚠️ ANTHROPIC_API_KEY is not set. AI Chat is unavailable.")
+        return
 
     st.markdown("**Quick questions:**")
     qc1, qc2, qc3, qc4 = st.columns(4)
@@ -52,7 +58,11 @@ Answer questions helpfully and concisely. If asked something outside farm sensor
                         messages.append({"role": "user", "content": user_input})
                     resp = requests.post(
                         "https://api.anthropic.com/v1/messages",
-                        headers={"Content-Type": "application/json"},
+                        headers={
+                            "Content-Type": "application/json",
+                            "x-api-key": api_key,
+                            "anthropic-version": "2023-06-01",
+                        },
                         json={"model": "claude-sonnet-4-20250514", "max_tokens": 1000, "messages": messages},
                         timeout=30,
                     )
