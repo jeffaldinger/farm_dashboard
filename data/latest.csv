@@ -1,0 +1,2 @@
+timestamp,CBT1_temp,CBT2_temp,CBT3A_temp,CBT3B_temp,CBT1_humidity,CBT2_humidity,CBT3A_humidity,CBT3B_humidity,CBT1_battery,CBT2_battery,CBT3A_battery,CBT3B_battery,cold_storage_temp,cold_storage_humidity,feed_bin_level,feed_bin_distance,water_leak
+2026-03-09 12:00:00,56.21,60.65,52.79,57.19,64.27,63.7,71.46,70.08,100,100,100,100,35.0,55.56,72.96,19.34,0.0
