@@ -1,3 +1,4 @@
+import html
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
@@ -63,6 +64,7 @@ def line_chart(df_r, cols, labels, title, yaxis="°F"):
 
 
 def sensor_card(label, temp, humidity, battery, THRESH):
+    safe_label = html.escape(str(label))
     if temp < THRESH["temp_freeze"] or temp > THRESH["temp_extreme"]:
         card_class = "sensor-card critical"
     elif temp < THRESH["temp_frost"] or temp > THRESH["temp_heat"] or humidity > THRESH["hum_mold"]:
@@ -77,7 +79,7 @@ def sensor_card(label, temp, humidity, battery, THRESH):
 
     return f"""
     <div class="{card_class}">
-        <div class="sensor-name">{label} - Temp & Humidity</div>
+        <div class="sensor-name">{safe_label} - Temp & Humidity</div>
         <div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:8px;">
             <div style="text-align:center;">
                 <div class="reading-value {temp_cls}">{temp:.1f}°F</div>
