@@ -7,7 +7,7 @@ def render(df, last, alerts, THRESH):
     st.title("🤖 AI Chat")
     st.caption("Ask questions about your sensor data — temperature, humidity, water leaks, cold storage, feed bin, and more.")
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         st.warning("⚠️ ANTHROPIC_API_KEY is not set. AI Chat is unavailable.")
         return
@@ -66,7 +66,11 @@ Answer questions helpfully and concisely. If asked something outside farm sensor
                         json={"model": "claude-sonnet-4-20250514", "max_tokens": 1000, "messages": messages},
                         timeout=30,
                     )
-                    reply = resp.json()["content"][0]["text"]
+                    resp_json = resp.json()
+                    if "content" in resp_json:
+                        reply = resp_json["content"][0]["text"]
+                    else:
+                        reply = f"Sorry, the AI service returned an error: {resp_json.get('error', {}).get('message', resp_json)}"
                 except Exception as e:
                     reply = f"Sorry, I couldn't connect to the AI service. ({e})"
                 st.write(reply)
